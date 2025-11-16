@@ -75,6 +75,25 @@ const adminAuth = (req, res, next) => {
 
 // ===== PUBLIC ENDPOINTS =====
 
+// Root endpoint - ANA SAYFA (YENİ EKLENEN!)
+app.get('/', (req, res) => {
+  console.log('🏠 Ana sayfa endpoint çağrıldı');
+  res.json({
+    status: 'success',
+    message: '🚀 Nefes Depo Backend Çalışıyor!',
+    version: '1.0.0',
+    database: mongoose.connection.readyState === 1 ? 'Bağlı ✅' : 'Bağlı Değil ❌',
+    endpoints: {
+      test: 'GET /api/test',
+      quoteRequest: 'POST /api/quote-request',
+      adminLogin: 'POST /api/admin/login',
+      adminStats: 'GET /api/admin/stats',
+      health: 'GET /health'
+    },
+    timestamp: new Date().toISOString()
+  });
+});
+
 // Test endpoint
 app.get('/api/test', (req, res) => {
   console.log('🔍 Test endpoint çağrıldı');
@@ -379,17 +398,18 @@ app.use((err, req, res, next) => {
 // SERVER BAŞLAT
 app.listen(PORT, () => {
   console.log(`
-╔════════════════════════════════════════╗
+╔═══════════════════════════════════════╗
 ║   🚀 NEFES DEPO BACKEND BAŞLATILDI    ║
-╠════════════════════════════════════════╣
+╠═══════════════════════════════════════╣
 ║  📍 Port: ${PORT}                        
 ║  🌐 URL: http://localhost:${PORT}       
 ║  📧 Email: ${process.env.EMAIL_USER || 'Yapılandırılmadı'}
 ║  💾 MongoDB: ${mongoose.connection.readyState === 1 ? 'Bağlı ✅' : 'Bağlanıyor... ⏳'}
 ║  🔐 Admin Şifre: ${process.env.ADMIN_PASSWORD || 'nefes2024'}
-╚════════════════════════════════════════╝
+╚═══════════════════════════════════════╝
 
-📝 Endpoint'ler:
+🔗 Endpoint'ler:
+   GET  /                    (Ana Sayfa - YENİ!)
    GET  /api/test
    POST /api/quote-request
    POST /api/admin/login
