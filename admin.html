@@ -1,0 +1,386 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Nefes Depo - Admin Panel</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        :root {
+            --primary: #ff6b35;
+            --secondary: #1a1a1a;
+            --success: #10b981;
+            --warning: #f59e0b;
+            --danger: #ef4444;
+        }
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #f0f2f5; color: #333; }
+        .login-container { display: flex; justify-content: center; align-items: center; min-height: 100vh; background: linear-gradient(135deg, #1a1a1a 0%, #2a2a2a 100%); }
+        .login-box { background: white; padding: 3rem; border-radius: 20px; box-shadow: 0 20px 60px rgba(0,0,0,0.3); width: 100%; max-width: 400px; }
+        .login-box h1 { color: var(--primary); margin-bottom: 2rem; text-align: center; }
+        .form-group { margin-bottom: 1.5rem; }
+        .form-group label { display: block; margin-bottom: 0.5rem; font-weight: 600; color: #333; }
+        .form-group input, .form-group select { width: 100%; padding: 0.75rem; border: 2px solid #e0e0e0; border-radius: 8px; font-size: 1rem; }
+        .form-group input:focus { outline: none; border-color: var(--primary); }
+        .btn { width: 100%; padding: 0.75rem; border: none; border-radius: 8px; font-size: 1rem; font-weight: 600; cursor: pointer; transition: all 0.3s; }
+        .btn-primary { background: var(--primary); color: white; }
+        .btn-primary:hover { background: #ff8c42; transform: translateY(-2px); }
+        .error-message { background: #fee; color: var(--danger); padding: 0.75rem; border-radius: 8px; margin-bottom: 1rem; display: none; }
+        .admin-panel { display: none; }
+        .admin-panel.active { display: block; }
+        .admin-header { background: var(--secondary); color: white; padding: 1rem 2rem; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+        .admin-header h1 { font-size: 1.5rem; }
+        .admin-header h1 span { color: var(--primary); }
+        .logout-btn { background: var(--primary); color: white; padding: 0.5rem 1.5rem; border: none; border-radius: 8px; cursor: pointer; font-weight: 600; }
+        .dashboard { padding: 2rem; max-width: 1400px; margin: 0 auto; }
+        .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 1.5rem; margin-bottom: 2rem; }
+        .stat-card { background: white; padding: 1.5rem; border-radius: 12px; box-shadow: 0 2px 10px rgba(0,0,0,0.08); border-left: 4px solid var(--primary); }
+        .stat-card h3 { color: #666; font-size: 0.9rem; margin-bottom: 0.5rem; }
+        .stat-card .number { font-size: 2.5rem; font-weight: 700; color: var(--secondary); }
+        .stat-card.success { border-left-color: var(--success); }
+        .stat-card.warning { border-left-color: var(--warning); }
+        .stat-card.danger { border-left-color: var(--danger); }
+        .filters { background: white; padding: 1.5rem; border-radius: 12px; margin-bottom: 1.5rem; box-shadow: 0 2px 10px rgba(0,0,0,0.08); display: flex; gap: 1rem; flex-wrap: wrap; }
+        .filter-group { flex: 1; min-width: 200px; }
+        .quotes-container { background: white; border-radius: 12px; box-shadow: 0 2px 10px rgba(0,0,0,0.08); overflow: hidden; }
+        .quotes-header { padding: 1.5rem; border-bottom: 1px solid #e0e0e0; display: flex; justify-content: space-between; align-items: center; }
+        .refresh-btn { background: var(--primary); color: white; padding: 0.5rem 1.5rem; border: none; border-radius: 8px; cursor: pointer; font-weight: 600; }
+        .quotes-table { width: 100%; border-collapse: collapse; }
+        .quotes-table th, .quotes-table td { padding: 1rem; text-align: left; border-bottom: 1px solid #f0f0f0; }
+        .quotes-table th { background: #f8f9fa; font-weight: 600; color: #666; font-size: 0.9rem; }
+        .quotes-table tr:hover { background: #f8f9fa; }
+        .status-badge { display: inline-block; padding: 0.25rem 0.75rem; border-radius: 20px; font-size: 0.85rem; font-weight: 600; }
+        .status-pending { background: #fff3cd; color: #856404; }
+        .status-contacted { background: #d1ecf1; color: #0c5460; }
+        .status-quoted { background: #cfe2ff; color: #084298; }
+        .status-completed { background: #d4edda; color: #155724; }
+        .action-btn { padding: 0.5rem 1rem; border: none; border-radius: 6px; cursor: pointer; font-size: 0.85rem; font-weight: 600; margin-right: 0.5rem; }
+        .btn-view { background: var(--primary); color: white; }
+        .btn-whatsapp { background: #25d366; color: white; }
+        .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); justify-content: center; align-items: center; z-index: 1000; }
+        .modal.active { display: flex; }
+        .modal-content { background: white; padding: 2rem; border-radius: 12px; max-width: 600px; width: 90%; max-height: 80vh; overflow-y: auto; }
+        .modal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; }
+        .close-btn { background: none; border: none; font-size: 1.5rem; cursor: pointer; color: #999; }
+        .detail-row { margin-bottom: 1rem; padding: 1rem; background: #f8f9fa; border-radius: 8px; }
+        .detail-row label { display: block; font-weight: 600; color: #666; margin-bottom: 0.25rem; font-size: 0.9rem; }
+        .detail-row p { color: #333; font-size: 1rem; }
+        .loading { text-align: center; padding: 3rem; color: #999; }
+    </style>
+</head>
+<body>
+    <div class="login-container" id="loginScreen">
+        <div class="login-box">
+            <h1>📦 Nefes Depo Admin</h1>
+            <div class="error-message" id="loginError"></div>
+            <form id="loginForm">
+                <div class="form-group">
+                    <label for="password">Şifre</label>
+                    <input type="password" id="password" placeholder="Admin şifresini girin" value="nefes2024" required>
+                </div>
+                <button type="submit" class="btn btn-primary">Giriş Yap</button>
+            </form>
+        </div>
+    </div>
+
+    <div class="admin-panel" id="adminPanel">
+        <div class="admin-header">
+            <h1>📦 <span>Nefes Depo</span> Admin Panel</h1>
+            <button class="logout-btn" onclick="logout()">Çıkış Yap</button>
+        </div>
+
+        <div class="dashboard">
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <h3>Toplam Teklif</h3>
+                    <div class="number" id="statTotal">-</div>
+                </div>
+                <div class="stat-card warning">
+                    <h3>Bekleyenler</h3>
+                    <div class="number" id="statPending">-</div>
+                </div>
+                <div class="stat-card success">
+                    <h3>İletişimde</h3>
+                    <div class="number" id="statContacted">-</div>
+                </div>
+                <div class="stat-card danger">
+                    <h3>Bu Ay</h3>
+                    <div class="number" id="statMonth">-</div>
+                </div>
+            </div>
+
+            <div class="filters">
+                <div class="filter-group">
+                    <input type="text" id="searchInput" placeholder="İsim, telefon veya teklif no ara...">
+                </div>
+                <div class="filter-group">
+                    <select id="statusFilter">
+                        <option value="all">Tüm Durumlar</option>
+                        <option value="pending">Beklemede</option>
+                        <option value="contacted">İletişimde</option>
+                        <option value="quoted">Teklif Verildi</option>
+                        <option value="completed">Tamamlandı</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="quotes-container">
+                <div class="quotes-header">
+                    <h2>Teklif Talepleri</h2>
+                    <button class="refresh-btn" onclick="loadQuotes()">🔄 Yenile</button>
+                </div>
+                <div id="quotesTableContainer">
+                    <div class="loading">Yükleniyor...</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal" id="quoteModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Teklif Detayları</h3>
+                <button class="close-btn" onclick="closeModal()">×</button>
+            </div>
+            <div id="quoteDetails"></div>
+        </div>
+    </div>
+
+    <script>
+        const API_URL = 'https://nefes-depo-backend.onrender.com/api';
+        let adminPassword = localStorage.getItem('adminPassword') || 'nefes2024';
+
+        window.onload = () => {
+            if (localStorage.getItem('adminToken')) {
+                showAdminPanel();
+            }
+        };
+
+        document.getElementById('loginForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const password = document.getElementById('password').value;
+            const errorDiv = document.getElementById('loginError');
+
+            try {
+                const response = await fetch(`${API_URL}/admin/login`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ password })
+                });
+
+                const data = await response.json();
+
+                if (data.status === 'success') {
+                    adminPassword = password;
+                    localStorage.setItem('adminPassword', password);
+                    localStorage.setItem('adminToken', 'authenticated');
+                    showAdminPanel();
+                } else {
+                    errorDiv.textContent = data.message;
+                    errorDiv.style.display = 'block';
+                }
+            } catch (error) {
+                errorDiv.textContent = 'Bağlantı hatası!';
+                errorDiv.style.display = 'block';
+            }
+        });
+
+        function logout() {
+            localStorage.clear();
+            location.reload();
+        }
+
+        async function showAdminPanel() {
+            document.getElementById('loginScreen').style.display = 'none';
+            document.getElementById('adminPanel').classList.add('active');
+            await loadStats();
+            await loadQuotes();
+        }
+
+        async function loadStats() {
+            try {
+                const response = await fetch(`${API_URL}/admin/stats?password=${adminPassword}`);
+                const data = await response.json();
+
+                if (data.status === 'success') {
+                    document.getElementById('statTotal').textContent = data.stats.total;
+                    document.getElementById('statPending').textContent = data.stats.pending;
+                    document.getElementById('statContacted').textContent = data.stats.contacted;
+                    document.getElementById('statMonth').textContent = data.stats.thisMonth;
+                }
+            } catch (error) {
+                console.error('İstatistik hatası:', error);
+            }
+        }
+
+        async function loadQuotes() {
+            const searchTerm = document.getElementById('searchInput').value;
+            const status = document.getElementById('statusFilter').value;
+
+            try {
+                let url = `${API_URL}/admin/quotes?password=${adminPassword}`;
+                if (status !== 'all') url += `&status=${status}`;
+                if (searchTerm) url += `&search=${searchTerm}`;
+
+                const response = await fetch(url);
+                const data = await response.json();
+
+                if (data.status === 'success') {
+                    renderQuotesTable(data.quotes);
+                }
+            } catch (error) {
+                console.error('Teklif hatası:', error);
+            }
+        }
+
+        function renderQuotesTable(quotes) {
+            const container = document.getElementById('quotesTableContainer');
+
+            if (quotes.length === 0) {
+                container.innerHTML = '<div class="loading">Henüz teklif yok</div>';
+                return;
+            }
+
+            const serviceNames = {
+                'evden-eve': 'Evden Eve',
+                'kurumsal': 'Kurumsal',
+                'sehirler-arasi': 'Şehirler Arası',
+                'depolama': 'Depolama',
+                'ozel-esya': 'Özel Eşya',
+                'uluslararasi': 'Uluslararası'
+            };
+
+            const statusNames = {
+                'pending': 'Beklemede',
+                'contacted': 'İletişimde',
+                'quoted': 'Teklif Verildi',
+                'completed': 'Tamamlandı'
+            };
+
+            const html = `
+                <table class="quotes-table">
+                    <thead>
+                        <tr>
+                            <th>Teklif No</th>
+                            <th>Ad Soyad</th>
+                            <th>Telefon</th>
+                            <th>Hizmet</th>
+                            <th>Rota</th>
+                            <th>Tarih</th>
+                            <th>Durum</th>
+                            <th>İşlemler</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${quotes.map(q => `
+                            <tr>
+                                <td><strong>${q.quoteNumber}</strong></td>
+                                <td>${q.name}</td>
+                                <td><a href="tel:${q.phone}">${q.phone}</a></td>
+                                <td>${serviceNames[q.service] || q.service}</td>
+                                <td>${q.from} → ${q.to}</td>
+                                <td>${new Date(q.createdAt).toLocaleString('tr-TR')}</td>
+                                <td>
+                                    <span class="status-badge status-${q.status}">
+                                        ${statusNames[q.status] || q.status}
+                                    </span>
+                                </td>
+                                <td>
+                                    <button class="action-btn btn-view" onclick="viewQuote('${q._id}')">Görüntüle</button>
+                                    <button class="action-btn btn-whatsapp" onclick="window.open('https://wa.me/${q.phone}','_blank')">💬</button>
+                                </td>
+                            </tr>
+                        `).join('')}
+                    </tbody>
+                </table>
+            `;
+
+            container.innerHTML = html;
+        }
+
+        async function viewQuote(id) {
+            try {
+                const response = await fetch(`${API_URL}/admin/quotes/${id}?password=${adminPassword}`);
+                const data = await response.json();
+
+                if (data.status === 'success') {
+                    const q = data.quote;
+                    document.getElementById('quoteDetails').innerHTML = `
+                        <div class="detail-row">
+                            <label>Teklif Numarası</label>
+                            <p><strong>${q.quoteNumber}</strong></p>
+                        </div>
+                        <div class="detail-row">
+                            <label>Ad Soyad</label>
+                            <p>${q.name}</p>
+                        </div>
+                        <div class="detail-row">
+                            <label>Telefon</label>
+                            <p><a href="tel:${q.phone}">${q.phone}</a></p>
+                        </div>
+                        <div class="detail-row">
+                            <label>Email</label>
+                            <p>${q.email || 'Belirtilmedi'}</p>
+                        </div>
+                        <div class="detail-row">
+                            <label>Hizmet</label>
+                            <p>${q.service}</p>
+                        </div>
+                        <div class="detail-row">
+                            <label>Rota</label>
+                            <p>${q.from} → ${q.to}</p>
+                        </div>
+                        <div class="detail-row">
+                            <label>Mesaj</label>
+                            <p>${q.message || 'Yok'}</p>
+                        </div>
+                        <div class="detail-row">
+                            <label>Durum</label>
+                            <select id="statusUpdate">
+                                <option value="pending" ${q.status === 'pending' ? 'selected' : ''}>Beklemede</option>
+                                <option value="contacted" ${q.status === 'contacted' ? 'selected' : ''}>İletişimde</option>
+                                <option value="quoted" ${q.status === 'quoted' ? 'selected' : ''}>Teklif Verildi</option>
+                                <option value="completed" ${q.status === 'completed' ? 'selected' : ''}>Tamamlandı</option>
+                            </select>
+                        </div>
+                        <button class="btn btn-primary" onclick="updateQuoteStatus('${q._id}')">Güncelle</button>
+                    `;
+
+                    document.getElementById('quoteModal').classList.add('active');
+                }
+            } catch (error) {
+                alert('Teklif yüklenemedi!');
+            }
+        }
+
+        async function updateQuoteStatus(id) {
+            const newStatus = document.getElementById('statusUpdate').value;
+
+            try {
+                const response = await fetch(`${API_URL}/admin/quotes/${id}?password=${adminPassword}`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ status: newStatus })
+                });
+
+                const data = await response.json();
+
+                if (data.status === 'success') {
+                    alert('✅ Durum güncellendi!');
+                    closeModal();
+                    loadStats();
+                    loadQuotes();
+                }
+            } catch (error) {
+                alert('❌ Güncelleme başarısız!');
+            }
+        }
+
+        function closeModal() {
+            document.getElementById('quoteModal').classList.remove('active');
+        }
+
+        document.getElementById('searchInput').addEventListener('input', () => setTimeout(loadQuotes, 500));
+        document.getElementById('statusFilter').addEventListener('change', loadQuotes);
+    </script>
+</body>
+</html>
