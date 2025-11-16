@@ -1,4 +1,4 @@
-// server.js - Nefes Depo Nakliyat Backend (Tam Çalışır Versiyon)
+// server.js - Nefes Depo Nakliyat Backend (CORS Düzeltilmiş)
 const express = require('express');
 const cors = require('cors');
 const nodemailer = require('nodemailer');
@@ -10,7 +10,17 @@ const app = express();
 const PORT = process.env.PORT || 3000;
 
 // ===== MIDDLEWARE =====
-app.use(cors());
+// CORS ayarları - TÜM ORIGIN'LERE İZİN VER
+app.use(cors({
+  origin: '*', // Tüm domain'lere izin ver
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'x-admin-password']
+}));
+
+// Preflight requests için
+app.options('*', cors());
+
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use(express.static('public'));
@@ -75,7 +85,7 @@ const adminAuth = (req, res, next) => {
 
 // ===== PUBLIC ENDPOINTS =====
 
-// Root endpoint - ANA SAYFA (YENİ EKLENEN!)
+// Root endpoint - ANA SAYFA
 app.get('/', (req, res) => {
   console.log('🏠 Ana sayfa endpoint çağrıldı');
   res.json({
@@ -108,6 +118,7 @@ app.get('/api/test', (req, res) => {
 // Form gönderimi
 app.post('/api/quote-request', async (req, res) => {
   console.log('📝 Yeni teklif talebi alındı');
+  console.log('Request body:', req.body);
   
   try {
     const { name, phone, email, service, from, to, message } = req.body;
@@ -353,19 +364,6 @@ app.put('/api/admin/quotes/:id', adminAuth, async (req, res) => {
   }
 });
 
-// Hizmet adlarını çevir
-function getServiceName(serviceCode) {
-  const services = {
-    'evden-eve': 'Evden Eve Nakliyat',
-    'kurumsal': 'Kurumsal Taşımacılık',
-    'sehirler-arasi': 'Şehirler Arası Nakliyat',
-    'depolama': 'Depolama Hizmeti',
-    'ozel-esya': 'Özel Eşya Taşıma',
-    'uluslararasi': 'Uluslararası Nakliyat'
-  };
-  return services[serviceCode] || serviceCode;
-}
-
 // Sağlık kontrolü
 app.get('/health', (req, res) => {
   res.json({ 
@@ -406,12 +404,13 @@ app.listen(PORT, () => {
 ║  📧 Email: ${process.env.EMAIL_USER || 'Yapılandırılmadı'}
 ║  💾 MongoDB: ${mongoose.connection.readyState === 1 ? 'Bağlı ✅' : 'Bağlanıyor... ⏳'}
 ║  🔐 Admin Şifre: ${process.env.ADMIN_PASSWORD || 'nefes2024'}
+║  🌍 CORS: Tüm origin'lere açık ✅
 ╚═══════════════════════════════════════╝
 
 🔗 Endpoint'ler:
-   GET  /                    (Ana Sayfa - YENİ!)
+   GET  /                    (Ana Sayfa)
    GET  /api/test
-   POST /api/quote-request
+   POST /api/quote-request   ⭐ FORM GÖNDERİM
    POST /api/admin/login
    GET  /api/admin/stats
    GET  /api/admin/quotes
@@ -423,4 +422,5 @@ app.listen(PORT, () => {
   `);
   
   console.log('✅ Tüm endpoint\'ler yüklendi');
+  console.log('✅ CORS ayarları: origin=* (tüm domain\'lere açık)');
 });
